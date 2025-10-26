@@ -1,8 +1,12 @@
+import os
+import json
+import re
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.prompts import PromptTemplate
-import os
-from dotenv import load_dotenv
+from agent_tools import create_agent_tools # <-- ADDED IMPORTS
+from state_store import apply_move   # <-- ADDED IMPORTS
 
 load_dotenv()
 
@@ -46,14 +50,12 @@ def create_cambio_agent():
     """Create the LangChain agent for playing Cambio."""
     llm = ChatOpenAI(
         model="gpt-4o-mini",
-        temperature=0.1,  # Low temperature for more deterministic play
+        temperature=0.1,
         api_key=os.getenv("OPENAI_API_KEY")
     )
     
     tools = create_agent_tools()
-    
     prompt = PromptTemplate.from_template(CAMBIO_AGENT_PROMPT)
-    
     agent = create_react_agent(llm, tools, prompt)
     agent_executor = AgentExecutor(
         agent=agent,
@@ -96,20 +98,14 @@ Valid move types:
         # Parse the agent's output
         try:
             decision = json.loads(output)
-        except:
-            # Try to extract JSON from the output
-            import re
+        except json.JSONDecodeError:
             json_match = re.search(r'\{.*\}', output, re.DOTALL)
             if json_match:
                 decision = json.loads(json_match.group())
             else:
-                return {
-                    "error": "Agent failed to produce valid JSON",
-                    "raw_output": output
-                }
+                return {"error": "Agent failed to produce valid JSON", "raw_output": output}
         
         if apply:
-            # Apply the move
             move_result = apply_move(game_id, decision["move"])
             decision["applied"] = move_result.get("valid", False)
             if not move_result.get("valid"):

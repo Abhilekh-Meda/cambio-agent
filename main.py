@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
+from state_store import create_game, get_state, patch_state, apply_move
+from agent import run_agent_move
+# ---------------------
 
 app = FastAPI(title="Cambio LLM Game Agent API")
 
@@ -111,4 +114,4 @@ if __name__ == "__main__":
     import uvicorn
     print("Starting Cambio Game Agent API...")
     print("Make sure to set OPENAI_API_KEY in your .env file")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
